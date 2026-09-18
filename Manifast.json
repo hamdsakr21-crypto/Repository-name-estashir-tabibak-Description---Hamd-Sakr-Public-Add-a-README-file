@@ -1,0 +1,15 @@
+{
+  "name": "استشير طبيبك - حمد صقر",
+  "short_name": "استشير طبيبك",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eef6ff",
+  "theme_color": "#43A047",
+  "icons": [
+    {
+      "src": "logo.jbg.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
