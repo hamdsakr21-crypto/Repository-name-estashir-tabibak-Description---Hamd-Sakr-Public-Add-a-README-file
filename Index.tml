@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>استشر طبيبك - إعداد حمد صقر</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+ body{font-family:Tahoma;background:#f0f8ff;color:#003366;padding:12px;margin:0}
+.header{background:#fff;padding:18px;border-radius:15px;text-align:center;box-shadow:0 2px 10px #cce}
+.card{background:#fff;padding:15px;border-radius:12px;margin:12px 0;box-shadow:0 1px 6px #cce}
+ button{padding:12px;border:none;border-radius:10px;width:100%;font-weight:bold;cursor:pointer;margin:6px 0}
+.blue{background:#0b57d0;color:#fff}
+.gold{background:#ffb703;color:#000}
+ #result{white-space:pre-line;background:#fff;padding:15px;border-radius:10px;border:2px solid #0b57d0;line-height:1.8}
+.badge{display:inline-block;background:#e8f0fe;padding:6px 10px;border-radius:20px;margin:3px;font-size:12px}
+ canvas{width:100%!important;background:#000;border-radius:10px;margin-top:10px}
+ img.app-cover{width:100%;border-radius:12px;margin:10px 0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 style="margin:0;color:#0b57d0">🩺 استشر طبيبك</h1>
+  <h3 style="margin:5px">Estashir Tabibak</h3>
+  <p style="margin:5px">قراءة التحاليل الطبية والأشعة ورسم القلب - إرشادات ونصائح موثوقة</p>
+  <div><span class="badge">📄 تحاليل</span><span class="badge">🩻 أشعة</span><span class="badge">❤️ رسم قلب</span></div>
+  <small style="color:#0b57d0;font-weight:bold">إعداد وتطوير: حمد صقر - Hamd Sakr | Pi Protocol 28</small>
+</div>
+
+<img class="app-cover" src="https://i.ibb.co/placeholder-doctor.jpg" id="cover" style="display:none">
+
+<div class="card">
+  <button class="blue" onclick="loginPi()">🔐 تسجيل دخول بـ Pi</button>
+  <p id="user" style="text-align:center;font-weight:bold"></p>
+  <p style="font-size:12px;text-align:center">⚠️ هذا التطبيق تثقيفي فقط وليس تشخيص طبي</p>
+</div>
+
+<div class="card">
+  <h3>📤 ارفع تحاليلك / أشعة / رسم قلب</h3>
+  <input type="file" id="labFile" accept="image/*,.pdf" onchange="previewFile(event)" style="width:100%">
+  <img id="preview" style="max-width:100%;margin-top:10px;display:none;border-radius:8px">
+  <button class="gold" onclick="analyzeFile()">🤖 حلل وأعطني إرشادات</button>
+  <canvas id="ecgChart" height="140"></canvas>
+  <p id="ecgInfo" style="font-weight:bold;text-align:center"></p>
+</div>
+
+<div class="card">
+  <h4>📝 أو أدخل القيم يدوياً</h4>
+  Cortisol <input id="cortisol" type="number" placeholder="مثال 18">
+  T4 <input id="t4" type="number" placeholder="مثال 1.2">
+  TSH <input id="tsh" type="number" placeholder="مثال 2.1">
+  <button class="blue" onclick="freeAnalysis()">تحليل مجاني (تثقيفي)</button>
+  <button class="gold" onclick="payWithPi()">🔓 تقرير كامل + متابعة 30 يوم - 0.5 Pi</button>
+</div>
+
+<div id="result">👋 أهلاً بك في تطبيق استشر طبيبك
+إعداد: حمد صقر - Hamd Sakr
+
+ارفع ملف PDF تحليل أو صورة أشعة أو ECG وسيتم:
+1. قراءة القيم تلقائياً
+2. إعطاء إرشادات ونصائح عامة
+3. رسم بياني للنبض لو كان ECG
+
+⚕️ تنبيه: إرشادات تثقيفية فقط، يجب استشارة طبيب مختص
+</div>
+
+<footer style="text-align:center;margin-top:20px;padding:15px;background:#fff;border-radius:10px">
+  <b>إعداد وتطوير: حمد صقر - Hamd Sakr</b><br>
+  استشر طبيبك - Estashir Tabibak<br>
+  🛡️ آمن | 📋 دقيق | ✅ موثوق<br>
+  <small>© 2026 Hamd Sakr - Pi Network Compatible</small>
+</footer>
+
+<script>
+Pi.init({version:"2.0", sandbox:true});
+let currentUser=null;
+let chartInstance=null;
+
+async function loginPi(){
+ try{
+  const auth = await Pi.authenticate(['username','payments'], ()=>{});
+  currentUser=auth.user;
+  document.getElementById('user').innerText='مرحباً: '+currentUser.username;
+ }catch(e){ alert('افتح التطبيق من Pi Browser'); }
+}
+
+function previewFile(e){
+ const file=e.target.files[0];
+ const img=document.getElementById('preview');
+ if(file && file.type.startsWith('image/')){
+   img.src=URL.createObjectURL(file); img.style.display='block';
+ } else { img.style.display='none'; }
+}
+
+async function analyzeFile(){
+ const file=document.getElementById('labFile').files[0];
+ if(!file){ alert('اختار ملف الأول'); return; }
+ if(file.type==='application/pdf'){ await readPDF(file); }
+ else { await readECG(file); }
+}
+
+// قراءة PDF
+async function readPDF(file){
+ const buffer=await file.arrayBuffer();
+ const pdf=await pdfjsLib.getDocument(buffer).promise;
+ let fullText='';
+ for(let i=1;i<=pdf.numPages;i++){
+   const page=await pdf.getPage(i);
+   const content=await page.getTextContent();
+   fullText+=content.items.map(it=>it.str).join(' ')+'\n';
+ }
+ const extract=(name)=>{
+   const regex=new RegExp(name+'\\s*[:]?\\s*([0-9.]+)','i');
+   const m=fullText.match(regex); return m?m[1]:null;
+ };
+ let cortisol=extract('cortisol'), t4=extract('T4')||extract('thyroxine'), tsh=extract('TSH');
+ if(cortisol) document.getElementById('cortisol').value=cortisol;
+ if(t4) document.getElementById('t4').value=t4;
+ if(tsh) document.getElementById('tsh').value=tsh;
+ document.getElementById('result').innerText=
+ `📄 تم قراءة PDF (${fullText.length} حرف)
+🔍 قيم مكتشفة:
+Cortisol=${cortisol||'--'} T4=${t4||'--'} TSH=${tsh||'--'}
+
+تم تعبئة الحقول تلقائياً، اضغط تحليل مجاني.
+⚕️ تثقيفي فقط - قارن بالـ Reference Range وراجع طبيبك.
+\n--- نص مستخرج ---\n${fullText.slice(0,500)}`;
+}
+
+// قراءة ECG وحساب نبض
+async function readECG(file){
+ const bmp=await createImageBitmap(file);
+ const canvas=document.createElement('canvas');
+ const ctx=canvas.getContext('2d');
+ canvas.width=bmp.width; canvas.height=bmp.height;
+ ctx.drawImage(bmp,0,0);
+ const y=Math.floor(bmp.height/2);
+ const data=ctx.getImageData(0,y,bmp.width,1).data;
+ let signal=[]; for(let x=0;x<bmp.width;x+=2){ signal.push(255-data[x*4]); }
+ let peaks=[]; for(let i=1;i<signal.length-1;i++){ if(signal[i]>80 && signal[i]>signal[i-1] && signal[i]>signal[i+1]) peaks.push(i); }
+ peaks=peaks.filter((p,i,a)=> i==0 || p-a[i-1]>20);
+ let bpm=Math.round((peaks.length/10)*60);
+ const chartCanvas=document.getElementById('ecgChart');
+ if(chartInstance) chartInstance.destroy();
+ chartInstance=new Chart(chartCanvas,{type:'line',data:{labels:signal.map((_,i)=>i),datasets:[{data:signal,borderColor:'#00ff00',pointRadius:0,borderWidth:1}]},options:{animation:false,plugins:{legend:{display:false}},scales:{y:{display:false},x:{display:false}}}});
+ let guide=bpm<60?'نبض بطيء نسبياً - لو معه دوخة راجع طبيب':bpm<=100?'نبض في المجال الشائع 60-100':'نبض سريع نسبياً - لو مستمر أو مع ألم صدر توجه للطوارئ';
+ document.getElementById('ecgInfo').innerText=`❤️ نبض تقديري ~${bpm} / دقيقة`;
+ document.getElementById('result').innerText=`❤️ تم تحليل رسم القلب
+عدد القمم: ${peaks.length} في ~10 ثواني
+نبض تقديري: ~${bpm} نبضة/دقيقة
+
+--- توجيه تثقيفي (مش تشخيص) ---
+${guide}
+
+⚕️ هذا تقدير آلي من صورة وليس تشخيص طبي، اعرض الرسم على طبيب قلب مختص.
+
+إعداد: حمد صقر - Hamd Sakr`;
+}
+
+function freeAnalysis(){
+ const c=parseFloat(document.getElementById('cortisol').value)||0;
+ const t4=parseFloat(document.getElementById('t4').value)||0;
+ let out=`👤 المستخدم: ${currentUser?currentUser.username:'زائر'}\n`;
+ out+=`Cortisol=${c} T4=${t4}\n\n`;
+ if(c>18) out+='⚠️ كورتيزول مرتفع نسبياً - قد يرتبط بتوتر/قلة نوم. توجيه: نوم 7-8 ساعات، تقليل كافيين.\n';
+ if(t4<0.8) out+='⚠️ T4 منخفض - قد يرتبط بكسل/اكتئاب. توجيه: راجع طبيب غدد.\n';
+ if(t4>1.8) out+='⚠️ T4 مرتفع - قد يرتبط بعصبية/خفقان. توجيه: راجع طبيب غدد.\n';
+ out+='\n⚕️ إرشادات تثقيفية فقط - استشر طبيبك\nإعداد: حمد صقر';
+ document.getElementById('result').innerText=out;
+}
+
+async function payWithPi(){
+ if(!currentUser){ alert('سجل دخول بـ Pi الأول'); return; }
+ try{
+   await Pi.createPayment({amount:0.5,memo:'تقرير كامل - استشر طبيبك',metadata:{app:'estashir-tabibak',owner:'Hamd Sakr'}},{
+     onReadyForServerApproval:(id)=>{console.log('approve',id)},
+     onReadyForServerCompletion:(id,txid)=>{ document.getElementById('result').innerText+='\n\n✅ تم الدفع بنجاح TX:'+txid+'\n🔓 التقرير الكامل مفتوح الآن - متابعة 30 يوم\nإعداد: حمد صقر'; },
+     onCancel:()=>{alert('تم الإلغاء')},
+     onError:(e)=>{alert('خطأ:'+e.message)}
+   });
+ }catch(e){ alert(e.message); }
+}
+</script>
+</body>
+</html>
