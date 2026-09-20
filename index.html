@@ -3,27 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>استشير طبيبك</title>
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<title>استشير طبيبك - مجاني</title>
 <style>
-body{font-family:tahoma;background:#eef6ff;margin:0;padding:12px}
-.card{background:white;border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
-.banner{width:100%;border-radius:22px;display:block}
-.logo{width:130px;height:130px;border-radius:50%;border:4px solid #4CAF50;display:block;margin:0 auto 10px;object-fit:cover}
-.btn{background:#43A047;color:white;padding:14px;border:none;border-radius:14px;width:100%;font-size:18px;font-weight:bold;margin-top:8px}
-.btn2{background:#1E88E5}
+body{font-family:Tahoma; background:#f5f9ff; margin:0; padding:15px}
+.header{background:#0052cc; color:white; padding:20px; border-radius:20px; text-align:center}
+.card{background:white; border-radius:15px; padding:15px; margin:15px 0; box-shadow:0 2px 10px #0001}
+.btn-free{background:#00b894; color:white; border:0; padding:14px; border-radius:10px; width:100%; font-size:16px; margin:5px 0}
+.btn-paid{background:#d63031; color:white; border:0; padding:14px; border-radius:10px; width:100%; font-size:16px; margin:5px 0}
+.badge{background:#ffeaa7; padding:5px 10px; border-radius:20px; font-size:12px}
+.small{color:#777; font-size:12px; text-align:center}
 </style>
 </head>
 <body>
-<div class="card" style="padding:0;overflow:hidden"><img src="banner.jbg.jpg" class="banner"></div>
-<div class="card" style="text-align:center">
-<img src="logo.jbg.jpg" class="logo">
-<h2>أهلاً بيك في استشير طبيبك 👩‍⚕️</h2>
-<p>برعاية حمد صقر</p>
-<img src="inside.jbg.jpg" style="width:100%;border-radius:16px;margin:10px 0">
-<button class="btn" onclick="Pi.authenticate(['username'], a=>alert('أهلاً '+a.user.username))">🔐 تسجيل دخول بـ Pi</button>
-<button class="btn btn2">🩺 ابدأ الاستشارة</button>
+<div class="header">
+<h2>🏥 استشير طبيبك</h2>
+<p>كل الفحوصات مجانية 100% - ادفع فقط لو كلمت دكتور لايف</p>
+<span class="badge">✅ يقبل الدفع بـ Pi Network</span>
 </div>
-<script>Pi.init({version:"2.0"})</script>
+<div class="card">
+<h3>🔍 فحوصات مجانية - جرب الآن</h3>
+<button class="btn-free" onclick="location.href='checkup.html'">❤️ فحص 60 ثانية</button>
+<button class="btn-free" onclick="alert('قريباً: اختبار نظر')">👁️ اختبار النظر - مجاني</button>
+<button class="btn-free" onclick="alert('قريباً: اختبار سمع')">👂 اختبار السمع - مجاني</button>
+</div>
+<div class="card" style="border:2px solid #d63031">
+<h3>💬 استشارة طبيب لايف - مدفوعة</h3>
+<button class="btn-paid" onclick="if(confirm('سعر الاستشارة 50 جنيه أو 1.5 Pi')) location.href='doctors.html'">كلم دكتور الآن - مدفوع</button>
+</div>
+<div class="small">© 2026 استشير طبيبك</div>
 </body>
 </html>
